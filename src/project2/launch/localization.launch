@@ -1,0 +1,38 @@
+<launch>
+
+    <param name="/use_sim_time" value="true"/>
+
+    <node pkg="tf" type="static_transform_publisher" name="baselinkekf_to_laser"
+            args="0 0 0 0 0 0.7071068 0.7071068 base_link_ekf laser 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="baselinkekf_to_baselink"
+            args="0 0 0 0 0 0 1 base_link_ekf base_link 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="baselinkekf_to_cameragyro" 
+            args="0 0 0 0 0 0 1 base_link_ekf camera_gyro_optical_frame 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="baselinkekf_to_cameraaccel" 
+            args="0 0 0 0 0 0 1 base_link_ekf camera_accel_optical_frame 100"/>
+
+    
+    <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_madgwick_node" output="screen">  
+        <remap from="imu/data_raw" to="/mavros/imu/data_raw" />  
+        <param name="use_mag" value="false"/>
+        <param name="use_magnetic_field_msg" value="false"/>
+        <param name="reverse_tf" value="true"/>
+        <param name="publish_tf" value="false"/>
+        <param name="fixed_frame" value="odom"/>
+    </node>
+
+    <node name="ekf_node" pkg="robot_localization" type="ekf_localization_node" clear_params="true">
+        <rosparam command="load" file="$(find project2)/params/ekf_params.yaml" />
+    </node>
+
+    <node pkg="amcl" type="amcl" name="amcl">
+        <rosparam command="load" file="$(find project2)/params/amcl_params.yaml"/>
+    </node>
+
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find project2)/maps/map.yaml">
+        <param name="frame_id" value="map"/>
+    </node>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find project2)/rviz/localization.rviz"/>
+
+</launch>
